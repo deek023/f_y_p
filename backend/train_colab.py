@@ -99,6 +99,36 @@ def gram_matrix(y):
     return gram
 
 
+def edge_preservation_loss(output, content):
+    """Preserve image structure using multi-scale Sobel edge consistency."""
+    def sobel_edges(x):
+        gray = (
+            0.299 * x[:, 0:1]
+            + 0.587 * x[:, 1:2]
+            + 0.114 * x[:, 2:3]
+        ) / 255.0
+
+        kx = torch.tensor(
+            [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
+            dtype=gray.dtype, device=gray.device
+        ).view(1, 1, 3, 3) / 8.0
+        ky = kx.transpose(2, 3)
+
+        gx = nn.functional.conv2d(gray, kx, padding=1)
+        gy = nn.functional.conv2d(gray, ky, padding=1)
+        return torch.sqrt(gx.square() + gy.square() + 1e-8)
+
+    loss = nn.functional.l1_loss(sobel_edges(output), sobel_edges(content))
+
+    # Add a half-resolution comparison to account for larger structures.
+    output_half = nn.functional.avg_pool2d(output, kernel_size=2)
+    content_half = nn.functional.avg_pool2d(content, kernel_size=2)
+    loss += nn.functional.l1_loss(
+        sobel_edges(output_half), sobel_edges(content_half)
+    )
+    return loss
+
+
 def total_variation_loss(img):
     """Computes total variation loss to suppress high-frequency noise."""
     tv_h = torch.mean(torch.abs(img[:, :, 1:, :] - img[:, :, :-1, :]))
@@ -319,8 +349,11 @@ def train(args):
             # C. Total Variation Regularization
             tv_loss = args.tv_weight * total_variation_loss(output_batch)
 
-            # D. Total Combined Loss
-            total_loss = content_loss + style_loss + tv_loss
+            # D. Edge preservation loss
+            edge_loss = 0.05 * edge_preservation_loss(output_batch, content_batch)
+
+            # E. Total Combined Loss
+            total_loss = content_loss + style_loss + tv_loss + edge_loss
             total_loss.backward()
             optimizer.step()
 
@@ -341,12 +374,12 @@ def train(args):
 
         # Save checkpoint per epoch
         ckpt_suffix = "_pilot" if args.pilot else ""
-        epoch_path = os.path.join(args.checkpoint_dir, f"kalakriti_cin_warli{ckpt_suffix}_epoch{epoch+1}.pth")
+        epoch_path = os.path.join(args.checkpoint_dir, f"kalakriti_cin_warli_color_v4{ckpt_suffix}_epoch{epoch+1}.pth")
         torch.save(generator.state_dict(), epoch_path)
         print(f"Saved epoch checkpoint to {epoch_path}")
 
     # Save final operational weights
-    final_filename = "kalakriti_cin_warli_pilot.pth" if args.pilot else "kalakriti_cin_warli.pth"
+    final_filename = "kalakriti_cin_warli_color_v4_pilot.pth" if args.pilot else "kalakriti_cin_warli_color_v4.pth"
     final_path = os.path.join(args.checkpoint_dir, final_filename)
     torch.save(generator.state_dict(), final_path)
     print(f"\nTraining session complete. Final weights saved to {final_path}")

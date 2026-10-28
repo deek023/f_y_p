@@ -50,7 +50,7 @@ app.add_middleware(
 # Configuration & Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CHECKPOINT_DIR = os.path.join(BASE_DIR, "checkpoints")
-WARLI_CHECKPOINT_PATH = os.path.join(CHECKPOINT_DIR, "kalakriti_cin_warli.pth")
+WARLI_CHECKPOINT_PATH = os.path.join(CHECKPOINT_DIR, "kalakriti_cin_warli_color_v4.pth")
 WARLI_PILOT_PATH = os.path.join(CHECKPOINT_DIR, "kalakriti_cin_warli_pilot.pth")
 
 # Global Model State
@@ -192,7 +192,7 @@ def stylize_image(req: StylizeRequest):
             detail=(
                 f"Model weights for style '{req.styleId}' are not available on the server. "
                 "KalaKriti adheres to strict authenticity and does not return fake or filtered images. "
-                "Train the generator using train_colab.py and place kalakriti_cin_warli.pth in backend/checkpoints/."
+                "Train the generator using train_colab.py and place kalakriti_cin_warli_color_v4.pth in backend/checkpoints/."
             ),
         )
 
