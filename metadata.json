@@ -1,0 +1,6 @@
+{
+  "name": "KalaKriti — Neural Style Transfer",
+  "description": "Real-Time Multi-Style Neural Style Transfer for Visual Domain Adaptation and Indian Traditional Art.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
